@@ -1,22 +1,25 @@
+const url="https://localhost:7149/";
+var currentRoom = "";
+var currentUser = "";
+var room = document.querySelector("#room");
+var rooms = document.querySelector("#rooms");
+var element = document.querySelector("#offerValue");
+var button = document.querySelector("#offerBtn");
+var exit = document.querySelector("#leaveBtn");
 
-const url = "https://localhost:7055/";
 const connection = new signalR.HubConnectionBuilder()
-.withUrl(url + "offers")
-.configureLogging(signalR.LogLevel.Information)
-.build();
+    .withUrl(url+"offers")
+    .configureLogging(signalR.LogLevel.Information)
+    .build();
 
-let countdownTimeout;
-let firstUser = null;  
-let noNewBidTimeout = null;      
-
-async function start() {
+async function start(){
     try {
         await connection.start();
-        $.get(url + "api/Offer", function (data, status) {
-            const element = document.querySelector("#offerValue");
-            element.innerHTML = "Begin price : " + data + "$ ";
-        });
-        console.log("SignalR started");
+        $.get(url + "api/Offer/Room?room="+currentRoom,function(data,status){
+            element.innerHTML = "Begin price : " + data + "$";
+        })
+
+        console.log("SignalR Started");
     } catch (err) {
         console.log(err);
         setTimeout(() => {
@@ -24,73 +27,63 @@ async function start() {
         }, 5000);
     }
 }
-start();
 
-connection.on("ReceiveMessage", (message, data) => {
-    let element = document.querySelector("#responseOfferValue");
-    let bidBtn = document.querySelector("#bidBtn");
-    let user = document.querySelector("#user").value;
+async function JoinRoom(roomName){
+    currentRoom = roomName;
+    room.style.display = "block";
+    await start();
+    currentUser = document.querySelector("#user").value;
+      
+    await connection.invoke("JoinRoom",currentRoom,currentUser);
 
-    element.innerHTML = message + data + "$";
+    rooms.style.display = "none";
+    exit.style.display = "block";
+}
 
-    if (message === user + " 's Offer is ") {
-        if (firstUser === null) {
-            firstUser = user;  
-            countDown(bidBtn, 10);   
-        }
-    } else {
-        bidBtn.disabled = false;
-        bidBtn.innerHTML = "Bid";
-
-        if (countdownTimeout) {
-            clearTimeout(countdownTimeout);
-        }
-
-        if (noNewBidTimeout) {
-            clearTimeout(noNewBidTimeout);
-            noNewBidTimeout = null;
-        }
-        firstUser = null;
+async function LeaveRoom(){
+    if(currentRoom){
+        await connection.invoke("LeaveRoom",currentRoom,currentUser);
     }
-});
+    
+    room.style.display = "none"; 
+    rooms.style.display = "block";
 
-connection.on("ReceiveWinner",(nameOfWinner)=>{
-    let winner = document.querySelector("#winner");
-    winner.innerHTML = `${nameOfWinner} is win!`;
+    exit.style.display = "none";
+    currentRoom = "";
+}
+
+connection.on("ReceiveJoinInfo",(message)=>{
+    let infoUser = document.querySelector("#info");
+    infoUser.innerHTML = message + " connected to room";
+})
+connection.on("ReceiveLeaveInfo",(message)=>{
+    let infoUser = document.querySelector("#info");
+    infoUser.innerHTML = message + " left room";
 })
 
-async function IncreaseOffer() {
-    let user = document.querySelector("#user");
+connection.on("ReceiveFullRoomInfo",(message)=>{
+    let infoUser = document.querySelector("#info");
+    infoUser.innerHTML = "Room is full";
+    button.style.display = "none";
+})
 
-    $.get(url + "api/Offer/Increase?data=100", function (data, status) {
-        $.get(url + "api/Offer", function (data, status) {
-            connection.invoke("SendMessage", user.value, data);
-        });
-    });
+async function IncreaseOffer(){
+    const user = document.querySelector("#user");
+
+    $.get(url + `api/Offer/IncreaseRoom?room=${currentRoom}&data=1000`,
+        function(data,status){
+            $.get(url+"api/Offer/Room?room="+currentRoom,
+                async function(data,status){
+                    var element2 = document.querySelector("#offerValue2");
+                    element2.innerHTML = data;
+
+                    await connection.invoke("SendMessageRoom",currentRoom,user.value);
+                }
+            )
+        })
 }
 
-async function countDown(button, count) {
-    if (count === 0) {
-        button.disabled = false;
-        button.innerHTML = "Bid";
-        if (firstUser) {
-            connection.invoke("AnnounceWinner",firstUser);
-        }
-        return;
-    }
-
-    button.disabled = true;
-    button.innerHTML = `Wait ${count} sec`;
-
-    countdownTimeout = setTimeout(() => {
-        countDown(button, count - 1);
-    }, 1000);
-
-    if (!noNewBidTimeout) {
-        noNewBidTimeout = setTimeout(() => {
-            if (firstUser) {
-                connection.invoke("AnnounceWinner",firstUser);
-            }
-        }, 10000); 
-    }
-}
+connection.on("ReceiveInfoRoom",(user,data)=>{
+    var element2 = document.querySelector("#offerValue2");
+    element2.innerHTML = user + ` offer this price ${data}$`;
+});

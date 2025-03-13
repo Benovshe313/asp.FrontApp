@@ -1,27 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
-<body>
-    <h1>SignalR App</h1>
-    <hr>
-    <h1 id = "info" style = "color:springgreen"></h1>
-    <h1 id = "disconnectInfo" style="color:red"></h1>
-    <h1 id = "offerValue" style ="color:red"></h1>
-    <h1 id="responseOfferValue"></h1>
-    <h1 id="winner"></h1>
+  </head>
+  <body>
+    <h1>Our SignalR App</h1>
+    <hr />
 
-    <div>
-        <label for = "user">Username: </label>
-        <input type = "text" id = "user">
-        <button id="bidBtn" onclick="IncreaseOffer()" style ="font-size:1.5em;">Bid</button>
-    </div>
+    <section id = "rooms">
+        <section>
+            <label  for = "user">Username</label>
+            <input type = "text" name = "user" id = "user"/>
+        </section>
+
+        <button onclick ="JoinRoom('ferrari')">Join Ferrari</button>
+        <button onclick ="JoinRoom('bmw')">Join BMW</button>
+
+    </section>
+
+    <section id = "room" style="display:none;">
+        <h2 style = "color:aquamarine" id = "info"></h2>
+        <section style = "display:flex;">
+            <h1 id = "offerValue" style = "margin:20px;"></h1>
+            <h1 id = "offerValue2" style = "margin:20px;"></h1>
+        </section>
+
+        <button id="offerBtn" onclick = "IncreaseOffer()">Bid</button>
+        <button id="leaveBtn" onclick = "LeaveRoom()">Leave Room</button>
+    </section>
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
-    <script src = "index.js"></script>
-</body>
+    <script src="index.js"></script>
+  </body>
 </html>
